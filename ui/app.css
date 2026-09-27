@@ -1,0 +1,402 @@
+/* JARVIS — a command panel.
+   Every number on screen is a real reading. State drives the colour, so
+   the machine's condition is legible without reading a word. */
+
+:root {
+  --void: #03060c;
+  --deep: #060b15;
+  --panel: rgba(30, 86, 130, 0.07);
+  --line: rgba(84, 158, 214, 0.22);
+  --edge: rgba(120, 200, 255, 0.55);
+  --ink: #cfe4f5;
+  --dim: #5f819b;
+
+  --offline:   #445f75;
+  --listening: #2fd2ff;
+  --thinking:  #a081ff;
+  --executing: #ffb347;
+  --speaking:  #3ee89c;
+  --now: var(--offline);
+
+  --label: "Bahnschrift", "DIN Alternate", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", monospace;
+}
+
+body[data-state="listening"], body[data-state="waiting"] { --now: var(--listening); }
+body[data-state="calibrating"] { --now: var(--listening); }
+body[data-state="thinking"]  { --now: var(--thinking); }
+body[data-state="executing"] { --now: var(--executing); }
+body[data-state="speaking"]  { --now: var(--speaking); }
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%; margin: 0;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--label);
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* survey grid, kept faint so it reads as a backdrop and not a pattern */
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(84,158,214,.13) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(84,158,214,.13) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 15%, transparent 80%);
+}
+
+.frame {
+  position: relative;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr) 288px;
+  grid-template-rows: 46px minmax(0, 1fr) 52px;
+  grid-template-areas:
+    "top top top"
+    "left center right"
+    "cmd cmd cmd";
+  gap: 10px;
+  padding: 10px;
+}
+
+/* ------------------------------------------------------------- panels */
+
+.panel {
+  position: relative;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Corner brackets, drawn as background segments so no extra markup is
+   needed. Four corners, two strokes each. */
+.panel {
+  background-image:
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge)),
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge)),
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge)),
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge));
+  background-repeat: no-repeat;
+  background-size: 13px 1px, 1px 13px, 13px 1px, 1px 13px,
+                   13px 1px, 1px 13px, 13px 1px, 1px 13px;
+  background-position:
+    left top, left top, right top, right top,
+    left bottom, left bottom, right bottom, right bottom;
+}
+
+.panel h2 {
+  display: flex; align-items: center; gap: 9px;
+  margin: 0 0 9px;
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.panel h2::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+
+.panel h2 .count { color: var(--now); letter-spacing: .05em; font-family: var(--mono); }
+
+.grow { flex: 1; }
+.muted { margin: 0; color: var(--dim); opacity: .6; font-family: var(--mono); font-size: 11.5px; }
+
+/* ------------------------------------------------------------- top bar */
+
+.topbar {
+  grid-area: top;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.brand {
+  display: flex; align-items: baseline; gap: 10px;
+  font-size: 16px; font-weight: 600; letter-spacing: .3em;
+  color: var(--ink);
+}
+
+.brand .sub {
+  font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--dim); font-weight: 400;
+}
+
+.pip {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--now); box-shadow: 0 0 12px var(--now);
+  transition: background .4s, box-shadow .4s;
+  align-self: center;
+}
+
+.brand .pip { margin-right: 2px; }
+
+/* a measuring ruler, the sort a real instrument has along its edge */
+.ruler {
+  flex: 1; height: 12px; align-self: center;
+  background-image: repeating-linear-gradient(90deg,
+    var(--line) 0 1px, transparent 1px 14px);
+  mask-image: linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent);
+}
+
+.clock { text-align: right; font-family: var(--mono); line-height: 1.25; }
+.clock b { display: block; font-size: 15px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+.clock span { font-size: 9.5px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; }
+
+.topstate {
+  display: flex; align-items: center; gap: 8px;
+  padding-left: 16px; border-left: 1px solid var(--line);
+  font-size: 11px; letter-spacing: .2em; color: var(--now);
+  min-width: 128px;
+  transition: color .4s;
+}
+
+/* ------------------------------------------------------------- columns */
+
+.col { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.left { grid-area: left; }
+.center { grid-area: center; }
+.right { grid-area: right; }
+
+/* ------------------------------------------------------------- gauges */
+
+.gauges { display: flex; flex-direction: column; gap: 7px; }
+
+.gauge { display: grid; grid-template-columns: 30px 1fr 40px; align-items: center; gap: 9px; }
+.gauge .g-name { font-family: var(--mono); font-size: 10.5px; color: var(--dim); letter-spacing: .08em; }
+.gauge .g-val { font-family: var(--mono); font-size: 11px; text-align: right;
+                color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* segmented like a real level meter, not a smooth progress bar */
+.bar {
+  position: relative; height: 9px;
+  background-image: repeating-linear-gradient(90deg,
+    rgba(84,158,214,.20) 0 5px, transparent 5px 8px);
+}
+
+.bar i {
+  position: absolute; inset: 0 auto 0 0; display: block;
+  background-image: repeating-linear-gradient(90deg,
+    var(--now) 0 5px, transparent 5px 8px);
+  transition: width .5s ease, background-image .4s;
+}
+
+/* ------------------------------------------------------------- key/value */
+
+.kv { margin: 9px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px;
+      font-family: var(--mono); font-size: 11.5px; }
+.kv dt { color: var(--dim); letter-spacing: .05em; }
+.kv dd { margin: 0; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums;
+         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kv dd.on { color: var(--speaking); }
+.kv dd.off { color: var(--dim); }
+
+/* ------------------------------------------------------------- radar */
+
+.radar { flex: 1; display: grid; place-items: center; padding: 6px 0; min-height: 96px; }
+.radar svg { width: 118px; height: 118px; }
+.r-ring, .r-cross { fill: none; stroke: var(--line); stroke-width: 1; }
+.r-sweep path { fill: var(--now); opacity: 0; transform-origin: 60px 60px; }
+
+body[data-state="listening"] .r-sweep path,
+body[data-state="waiting"] .r-sweep path,
+body[data-state="speaking"] .r-sweep path {
+  opacity: .22;
+  animation: radar 3.2s linear infinite;
+}
+
+@keyframes radar { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------- hero */
+
+.hero { align-items: center; flex: none; }
+.hero h2 { align-self: stretch; }
+
+.bezel { position: relative; width: 168px; height: 168px; margin-top: 4px;
+         padding: 0; border: 0; background: none; cursor: pointer; }
+.bezel svg { width: 100%; height: 100%; overflow: visible; }
+
+.ring { fill: none; stroke: var(--line); stroke-width: 1.5; transition: stroke .4s; }
+.ring-outer { stroke: color-mix(in srgb, var(--now) 60%, transparent); stroke-width: 2; }
+.ring-mid { stroke-dasharray: 3 9; stroke-linecap: round; }
+
+.ring-scan {
+  stroke: var(--now); stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 58 470; opacity: 0; transform-origin: 110px 110px;
+}
+
+body[data-state="thinking"] .ring-scan,
+body[data-state="executing"] .ring-scan { opacity: 1; animation: sweep 1.5s linear infinite; }
+@keyframes sweep { to { transform: rotate(360deg); } }
+
+.ticks line { stroke: var(--line); stroke-width: 1.5; }
+
+.core {
+  fill: color-mix(in srgb, var(--now) 13%, var(--deep));
+  stroke: color-mix(in srgb, var(--now) 72%, transparent);
+  stroke-width: 1.5; transition: fill .5s, stroke .5s;
+}
+
+body[data-state="listening"] .core, body[data-state="speaking"] .core {
+  animation: breathe 3.4s ease-in-out infinite;
+}
+@keyframes breathe { 50% { fill: color-mix(in srgb, var(--now) 26%, var(--deep)); } }
+
+.core-label {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em;
+  color: var(--now); pointer-events: none; transition: color .4s;
+}
+
+.state { margin: 14px 0 0; font-size: 17px; letter-spacing: .3em;
+         text-transform: uppercase; color: var(--now); transition: color .4s; }
+.hint { margin: 6px 0 0; color: var(--dim); font-size: 12px; text-align: center; }
+.elapsed { margin: 4px 0 2px; height: 15px; font-family: var(--mono);
+           font-size: 12px; color: var(--now); font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------- feed */
+
+.feedwrap { flex: 1; min-height: 0; }
+
+.feed {
+  flex: 1; min-height: 0; overflow-y: auto;
+  font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  user-select: text; padding-right: 4px;
+}
+
+.feed::-webkit-scrollbar { width: 7px; }
+.feed::-webkit-scrollbar-thumb { background: var(--line); }
+
+.row { display: flex; gap: 10px; padding: 1px 0; }
+.row .t { color: var(--dim); opacity: .55; flex: none; font-variant-numeric: tabular-nums; }
+.row .w { flex: none; width: 48px; color: var(--dim); }
+.row .m { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.row.you .w { color: var(--listening); }
+.row.you .m { color: var(--ink); }
+.row.jarvis .w { color: var(--speaking); }
+.row.tool .m { color: var(--dim); }
+.row.note .m { color: var(--dim); }
+.row.warn .m { color: var(--executing); }
+
+/* ------------------------------------------------------------- lists */
+
+.list { margin: 0; padding: 0; list-style: none;
+        font-family: var(--mono); font-size: 11.5px; line-height: 1.75; }
+.list li { display: flex; justify-content: space-between; gap: 10px; }
+.list li span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list li span:last-child { color: var(--dim); flex: none; font-variant-numeric: tabular-nums; }
+.list li.muted { display: block; }
+
+/* ------------------------------------------------------------- actions */
+
+.acts { margin-top: auto; padding-top: 12px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+.acts button {
+  padding: 7px 4px; border: 1px solid var(--line); background: transparent;
+  color: var(--dim); font-family: var(--label); font-size: 11px;
+  letter-spacing: .06em; cursor: pointer; transition: color .2s, border-color .2s;
+}
+
+.acts button:hover { color: var(--ink); border-color: color-mix(in srgb, var(--now) 55%, transparent); }
+
+/* ------------------------------------------------------------- command bar */
+
+.cmdbar {
+  grid-area: cmd;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.caret { font-family: var(--mono); color: var(--now); font-size: 15px; transition: color .4s; }
+
+#input {
+  flex: 1; border: 0; background: none; outline: none;
+  color: var(--ink); font-family: var(--mono); font-size: 13.5px;
+  user-select: text; letter-spacing: .02em;
+}
+
+#input::placeholder { color: var(--dim); opacity: .7; }
+
+.send {
+  padding: 8px 20px;
+  border: 1px solid color-mix(in srgb, var(--now) 55%, transparent);
+  background: color-mix(in srgb, var(--now) 13%, transparent);
+  color: var(--now);
+  font-family: var(--label); font-size: 11.5px;
+  letter-spacing: .16em; text-transform: uppercase;
+  cursor: pointer; transition: background .2s;
+}
+
+.send:hover { background: color-mix(in srgb, var(--now) 26%, transparent); }
+
+/* ------------------------------------------------------------- confirm */
+
+.veil[hidden] { display: none; }
+
+.veil {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  background: rgba(2, 4, 9, .8); backdrop-filter: blur(5px); z-index: 10;
+}
+
+.ask {
+  width: min(460px, calc(100vw - 60px)); padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--executing) 45%, transparent);
+  background: #070c14;
+}
+
+.ask h2 { margin: 0 0 14px; font-size: 11px; font-weight: 600;
+          letter-spacing: .2em; text-transform: uppercase; color: var(--executing); }
+
+.ask pre {
+  margin: 0 0 18px; max-height: 220px; overflow: auto;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+  color: var(--ink); white-space: pre-wrap; word-break: break-word; user-select: text;
+}
+
+.ask-row { display: flex; gap: 10px; justify-content: flex-end; }
+.ask-row button { padding: 9px 18px; font-family: var(--label); font-size: 12px;
+                  letter-spacing: .08em; cursor: pointer; }
+.ghost { border: 1px solid var(--line); background: transparent; color: var(--dim); }
+.ghost:hover { color: var(--ink); }
+.solid { border: 1px solid var(--executing); background: var(--executing);
+         color: #1a1205; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+
+/* ------------------------------------------------------------- plan */
+
+.steps { margin: 0; padding: 0; list-style: none;
+         font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
+
+.steps li {
+  display: grid; grid-template-columns: 14px 1fr; gap: 7px;
+  padding: 2px 0; color: var(--dim);
+}
+
+.steps li::before { content: "\00b7"; text-align: center; opacity: .5; }
+
+/* done, running and failed each read differently at a glance */
+.steps li.done { color: var(--dim); }
+.steps li.done::before { content: "\2713"; color: var(--speaking); opacity: 1; }
+
+.steps li.now { color: var(--ink); }
+.steps li.now::before { content: "\25b8"; color: var(--now); opacity: 1; }
+
+.steps li.bad { color: var(--executing); }
+.steps li.bad::before { content: "\00d7"; color: var(--executing); opacity: 1; }
+
+.steps li.muted { display: block; }

@@ -1,0 +1,23 @@
+# Secrets — never commit this. It holds your API key.
+.env
+
+# Your own data, not the project's
+memory/
+browser_profile/
+jarvis.log
+*.bak
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editors and OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

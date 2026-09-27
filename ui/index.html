@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JARVIS</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body data-state="offline">
+
+<div class="frame">
+
+  <header class="topbar">
+    <div class="brand"><i class="pip"></i>J.A.R.V.I.S<span class="sub">assistant core</span></div>
+    <div class="ruler"></div>
+    <div class="clock"><b id="clock">--:--:--</b><span id="date"></span></div>
+    <div class="topstate"><i class="pip"></i><span id="topState">OFFLINE</span></div>
+  </header>
+
+  <aside class="col left">
+    <section class="panel">
+      <h2>System</h2>
+      <div class="gauges" id="gauges">
+        <p class="muted">psutil not installed</p>
+      </div>
+      <dl class="kv" id="sysKv"></dl>
+    </section>
+
+    <section class="panel grow">
+      <h2>Voice</h2>
+      <div class="radar">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="52" class="r-ring"/>
+          <circle cx="60" cy="60" r="34" class="r-ring"/>
+          <circle cx="60" cy="60" r="16" class="r-ring"/>
+          <line x1="8" y1="60" x2="112" y2="60" class="r-cross"/>
+          <line x1="60" y1="8" x2="60" y2="112" class="r-cross"/>
+          <g class="r-sweep"><path d="M60 60 L60 8 A52 52 0 0 1 97 23 Z"/></g>
+        </svg>
+      </div>
+      <dl class="kv" id="voiceKv"></dl>
+    </section>
+
+    <section class="panel">
+      <h2>Session</h2>
+      <dl class="kv" id="sessionKv"></dl>
+    </section>
+  </aside>
+
+  <main class="col center">
+    <section class="panel hero">
+      <h2>Core</h2>
+      <button class="bezel" id="power" aria-label="Activate JARVIS">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
+          <g class="ticks" id="ticks"></g>
+          <circle class="ring ring-outer" cx="110" cy="110" r="94"/>
+          <circle class="ring ring-mid"   cx="110" cy="110" r="72"/>
+          <circle class="ring ring-scan"  cx="110" cy="110" r="84"/>
+          <circle class="core"            cx="110" cy="110" r="44"/>
+        </svg>
+        <span class="core-label" id="coreLabel">Activate</span>
+      </button>
+      <p class="state" id="stateWord">Offline</p>
+      <p class="hint" id="hint">Click the core to start listening.</p>
+      <p class="elapsed" id="elapsed"></p>
+    </section>
+
+    <section class="panel feedwrap">
+      <h2>Activity<span class="count" id="feedCount"></span></h2>
+      <div class="feed" id="feed"></div>
+    </section>
+  </main>
+
+  <aside class="col right">
+    <section class="panel">
+      <h2>Plan<span class="count" id="planCount"></span></h2>
+      <ol class="steps" id="planSteps"><li class="muted">no plan running</li></ol>
+    </section>
+
+    <section class="panel">
+      <h2>Tools run</h2>
+      <ul class="list" id="toolList"><li class="muted">nothing yet</li></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Reminders</h2>
+      <ul class="list" id="remList"><li class="muted">none set</li></ul>
+    </section>
+
+    <section class="panel grow">
+      <h2>Resources</h2>
+      <dl class="kv" id="resKv"></dl>
+      <div class="acts">
+        <button data-act="mute" id="muteBtn">Mute voice</button>
+        <button data-act="stop">Stop</button>
+        <button data-act="browser">Close browser</button>
+        <button data-act="clear">Clear log</button>
+      </div>
+    </section>
+  </aside>
+
+  <footer class="cmdbar">
+    <span class="caret">&gt;</span>
+    <input id="input" type="text" placeholder="type a command" autocomplete="off" spellcheck="false">
+    <button id="send" class="send">Send</button>
+  </footer>
+
+</div>
+
+<div class="veil" id="veil" hidden>
+  <div class="ask" role="dialog" aria-modal="true">
+    <h2>Confirmation required</h2>
+    <pre id="askText"></pre>
+    <div class="ask-row">
+      <button id="askNo" class="ghost">No</button>
+      <button id="askYes" class="solid">Yes, go ahead</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
